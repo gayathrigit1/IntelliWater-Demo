@@ -1,0 +1,373 @@
+.tap-timer {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.timer-empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.timer-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.timer-empty h3 {
+  font-size: 20px;
+  color: #0d4f6e;
+  margin: 0 0 8px 0;
+}
+
+.timer-empty p {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 24px 0;
+}
+
+.timer-presets {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.timer-preset-btn {
+  padding: 12px 24px;
+  background: #0d4f6e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.timer-preset-btn:hover {
+  background: #083b52;
+}
+
+.timer-custom {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.timer-custom input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.timer-start-btn {
+  padding: 12px 24px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.timer-start-btn:hover {
+  background: #45a049;
+}
+
+.timer-start-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.timer-active {
+  text-align: center;
+}
+
+.timer-active.expired {
+  border: 2px solid #dc3545;
+}
+
+.timer-active.cancelled {
+  border: 2px solid #6c757d;
+}
+
+.timer-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.timer-outlet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0d4f6e;
+}
+
+.outlet-icon {
+  font-size: 24px;
+}
+
+.timer-paused-badge,
+.timer-expired-badge,
+.timer-cancelled-badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.timer-paused-badge {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.timer-expired-badge {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.timer-cancelled-badge {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.timer-display {
+  margin-bottom: 24px;
+}
+
+.timer-time-large {
+  font-size: 64px;
+  font-weight: 700;
+  color: #0d4f6e;
+  line-height: 1;
+  font-family: 'Courier New', monospace;
+}
+
+.timer-label {
+  font-size: 14px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.timer-progress {
+  margin-bottom: 24px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0d4f6e, #4caf50);
+  transition: width 1s linear;
+}
+
+.timer-active.expired .progress-fill {
+  background: #dc3545;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #999;
+}
+
+.timer-info {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0d4f6e;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.timer-control-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timer-control-btn.pause {
+  background: #ffc107;
+  color: #333;
+}
+
+.timer-control-btn.resume {
+  background: #4caf50;
+  color: white;
+}
+
+.timer-control-btn.extend {
+  background: #2196f3;
+  color: white;
+}
+
+.timer-control-btn.stop {
+  background: #dc3545;
+  color: white;
+}
+
+.timer-control-btn.new {
+  background: #0d4f6e;
+  color: white;
+}
+
+.timer-control-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.timer-extend-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.dialog-content h4 {
+  margin: 0 0 20px 0;
+  color: #0d4f6e;
+}
+
+.extend-presets {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.extend-presets button {
+  flex: 1;
+  padding: 12px;
+  background: #0d4f6e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.extend-presets button:hover {
+  background: #083b52;
+}
+
+.extend-custom {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.extend-custom input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.extend-custom button {
+  padding: 12px 24px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dialog-close {
+  width: 100%;
+  padding: 12px;
+  background: #f0f0f0;
+  color: #666;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dialog-close:hover {
+  background: #e0e0e0;
+}
+
+@media (max-width: 768px) {
+  .timer-time-large {
+    font-size: 48px;
+  }
+
+  .timer-info {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .timer-controls {
+    flex-direction: column;
+  }
+
+  .timer-control-btn {
+    width: 100%;
+  }
+}

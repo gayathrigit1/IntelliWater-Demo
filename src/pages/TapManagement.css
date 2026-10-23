@@ -1,0 +1,186 @@
+.tap-management-page {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  margin-top: 70px;
+  padding: 30px;
+  background: #f5f7fa;
+}
+
+.tap-management-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  max-width: 800px;
+}
+
+.outlet-selection h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0d4f6e;
+  margin: 0 0 16px 0;
+}
+
+.outlet-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.outlet-btn {
+  flex: 1;
+  padding: 16px 24px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.outlet-btn:hover {
+  border-color: #0d4f6e;
+  background: #f8f9fa;
+}
+
+.outlet-btn.active {
+  border-color: #0d4f6e;
+  background: #0d4f6e;
+  color: white;
+}
+
+.timer-section {
+  width: 100%;
+}
+
+.demo-controls {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.demo-controls h3 {
+  font-size: 16px;
+  color: #0d4f6e;
+  margin: 0 0 20px 0;
+}
+
+.control-group {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.control-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.control-group label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.control-group input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.test-btn {
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: #ffc107;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.test-btn:hover {
+  background: #e0a800;
+}
+
+.flow-simulation-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.flow-btn {
+  flex: 1;
+  padding: 12px 20px;
+  background: #0d4f6e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.flow-btn:hover {
+  background: #083b52;
+}
+
+.flow-btn.stop {
+  background: #dc3545;
+}
+
+.flow-btn.stop:hover {
+  background: #c82333;
+}
+
+.info-box {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.info-box h4 {
+  font-size: 14px;
+  color: #0d4f6e;
+  margin: 0 0 12px 0;
+}
+
+.info-box ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.info-box li {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 70px;
+    padding: 15px;
+  }
+
+  .tap-management-content {
+    max-width: 100%;
+  }
+
+  .outlet-buttons {
+    flex-direction: column;
+  }
+
+  .flow-simulation-buttons {
+    flex-direction: column;
+  }
+}

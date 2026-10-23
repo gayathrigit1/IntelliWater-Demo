@@ -1,0 +1,176 @@
+.alert-list {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.alert-list.empty {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.alert-list.empty h3 {
+  font-size: 20px;
+  color: #0d4f6e;
+  margin: 0 0 8px 0;
+}
+
+.alert-list.empty p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.alert-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.alert-list-header h3 {
+  font-size: 18px;
+  color: #0d4f6e;
+  margin: 0;
+}
+
+.clear-btn {
+  padding: 8px 16px;
+  background: #f0f0f0;
+  color: #666;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.clear-btn:hover {
+  background: #e0e0e0;
+}
+
+.alert-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.alert-item {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #6c757d;
+  transition: all 0.2s;
+}
+
+.alert-item:hover {
+  background: #f0f0f0;
+}
+
+.alert-item.acknowledged {
+  opacity: 0.6;
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.alert-icon {
+  font-size: 24px;
+}
+
+.alert-info {
+  flex: 1;
+}
+
+.alert-type {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0d4f6e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alert-time {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.acknowledge-btn {
+  width: 28px;
+  height: 28px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.acknowledge-btn:hover {
+  background: #45a049;
+}
+
+.alert-message {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.alert-details {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.detail-label {
+  color: #999;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #666;
+}
+
+.alert-source-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .alert-list {
+    padding: 15px;
+  }
+
+  .alert-items {
+    max-height: 300px;
+  }
+}

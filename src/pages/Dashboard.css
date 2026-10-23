@@ -1,0 +1,88 @@
+.dashboard-page {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  margin-top: 70px;
+  padding: 30px;
+  background: #f5f7fa;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0d4f6e;
+  margin: 0 0 16px 0;
+}
+
+.flow-cards-section {
+  grid-column: span 12;
+}
+
+.flow-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.discrepancy-section {
+  grid-column: span 4;
+}
+
+.discrepancy-note {
+  font-size: 13px;
+  color: #856404;
+  margin: 12px 0 0 0;
+  padding: 10px;
+  background: #fff3cd;
+  border-radius: 6px;
+}
+
+.chart-section {
+  grid-column: span 8;
+}
+
+.alerts-section {
+  grid-column: span 12;
+}
+
+@media (max-width: 1200px) {
+  .discrepancy-section {
+    grid-column: span 6;
+  }
+
+  .chart-section {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 70px;
+    padding: 15px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-cards-section,
+  .discrepancy-section,
+  .chart-section,
+  .alerts-section {
+    grid-column: span 1;
+  }
+
+  .flow-cards {
+    grid-template-columns: 1fr;
+  }
+}

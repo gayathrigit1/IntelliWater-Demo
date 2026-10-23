@@ -1,0 +1,160 @@
+.flow-monitoring-page {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  margin-top: 70px;
+  padding: 30px;
+  background: #f5f7fa;
+}
+
+.flow-monitoring-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.outlet-selector h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0d4f6e;
+  margin: 0 0 16px 0;
+}
+
+.outlet-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.outlet-btn {
+  padding: 12px 24px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.outlet-btn:hover {
+  border-color: #0d4f6e;
+  background: #f8f9fa;
+}
+
+.outlet-btn.active {
+  border-color: #0d4f6e;
+  background: #0d4f6e;
+  color: white;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0d4f6e;
+  margin: 0 0 16px 0;
+}
+
+.flow-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.thresholds-info {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.thresholds-info h3 {
+  font-size: 16px;
+  color: #0d4f6e;
+  margin: 0 0 16px 0;
+}
+
+.threshold-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.threshold-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.threshold-label {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.threshold-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0d4f6e;
+}
+
+.threshold-note {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.flow-chart-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.all-outlets-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.flow-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 70px;
+    padding: 15px;
+  }
+
+  .outlet-buttons {
+    flex-direction: column;
+  }
+
+  .outlet-btn {
+    width: 100%;
+  }
+
+  .threshold-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-cards {
+    grid-template-columns: 1fr;
+  }
+}

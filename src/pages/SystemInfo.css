@@ -1,0 +1,333 @@
+.system-info-page {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  margin-top: 70px;
+  padding: 30px;
+  background: #f5f7fa;
+}
+
+.system-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  max-width: 1000px;
+}
+
+.info-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.info-section h2 {
+  font-size: 20px;
+  color: #0d4f6e;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.info-card {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.info-card h3 {
+  font-size: 18px;
+  color: #0d4f6e;
+  margin: 0 0 12px 0;
+}
+
+.info-card p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.project-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0d4f6e;
+}
+
+.hardware-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hardware-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  align-items: flex-start;
+}
+
+.hardware-icon {
+  font-size: 32px;
+  min-width: 40px;
+}
+
+.hardware-details h4 {
+  font-size: 16px;
+  color: #0d4f6e;
+  margin: 0 0 4px 0;
+}
+
+.hardware-details p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.architecture-diagram {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.arch-block {
+  flex: 1;
+  min-width: 140px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #e0e0e0;
+}
+
+.arch-block h4 {
+  font-size: 14px;
+  color: #0d4f6e;
+  margin: 0 0 8px 0;
+}
+
+.arch-block p {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.arch-block.controller {
+  border-color: #0d4f6e;
+  background: #e8f4f8;
+}
+
+.arch-block.dashboard {
+  border-color: #4caf50;
+  background: #e8f5e9;
+}
+
+.arch-arrow {
+  font-size: 24px;
+  color: #999;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.status-card {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.status-label {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.status-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0d4f6e;
+}
+
+.status-value.demo_mode {
+  color: #856404;
+}
+
+.status-value.hardware_mode {
+  color: #155724;
+}
+
+.status-value.disconnected {
+  color: #721c24;
+}
+
+.status-value.demo {
+  color: #856404;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.feature-status {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 100px;
+}
+
+.feature-item.implemented .feature-status {
+  color: #28a745;
+}
+
+.feature-item.simulated .feature-status {
+  color: #ffc107;
+}
+
+.feature-item.future .feature-status {
+  color: #6c757d;
+}
+
+.feature-name {
+  font-size: 14px;
+  color: #333;
+}
+
+.warning-section h2 {
+  color: #dc3545;
+}
+
+.warning-box {
+  padding: 20px;
+  background: #f8d7da;
+  border-radius: 8px;
+  border-left: 4px solid #dc3545;
+}
+
+.warning-box ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.warning-box li {
+  font-size: 14px;
+  color: #721c24;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.warning-box li:last-child {
+  margin-bottom: 0;
+}
+
+.warning-box strong {
+  color: #dc3545;
+}
+
+.tech-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tech-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.tech-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  min-width: 150px;
+}
+
+.tech-value {
+  font-size: 14px;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 70px;
+    padding: 15px;
+  }
+
+  .system-info-content {
+    max-width: 100%;
+  }
+
+  .architecture-diagram {
+    flex-direction: column;
+  }
+
+  .arch-arrow {
+    transform: rotate(90deg);
+  }
+
+  .project-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hardware-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .tech-item {
+    flex-direction: column;
+  }
+}
