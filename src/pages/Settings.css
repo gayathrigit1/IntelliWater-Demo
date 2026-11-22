@@ -282,3 +282,72 @@
     width: 100%;
   }
 }
+
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid #dfe5eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.mode-option.selected {
+  border-color: #0d4f6e;
+  background: #eef6fa;
+}
+
+.connection-test {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.test-connection-btn,
+.duration-option {
+  padding: 8px 14px;
+  border: 1px solid #0d4f6e;
+  border-radius: 6px;
+  background: white;
+  color: #0d4f6e;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.duration-option.selected {
+  background: #0d4f6e;
+  color: white;
+}
+
+.connection-result {
+  font-size: 13px;
+}
+
+.connection-result.ok {
+  color: #146c3a;
+}
+
+.connection-result.fail {
+  color: #9b1c1c;
+}
+
+.timer-duration-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.timer-duration-options input {
+  width: 110px;
+}

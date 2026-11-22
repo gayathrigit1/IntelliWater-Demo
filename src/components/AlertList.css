@@ -174,3 +174,8 @@
     max-height: 300px;
   }
 }
+
+.alert-source-badge.live {
+  background: #e6f7ee;
+  color: #146c3a;
+}

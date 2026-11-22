@@ -174,3 +174,27 @@
     width: 100%;
   }
 }
+
+.filter-selects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.filter-selects label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #4a5b6c;
+}
+
+.filter-selects select {
+  padding: 8px 10px;
+  border: 1px solid #dfe5eb;
+  border-radius: 6px;
+  min-width: 160px;
+  text-transform: capitalize;
+}

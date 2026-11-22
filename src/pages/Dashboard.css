@@ -24,8 +24,104 @@
   margin: 0 0 16px 0;
 }
 
-.flow-cards-section {
+.flow-cards-section,
+.kpi-section,
+.tap-status-section,
+.consumption-section {
   grid-column: span 12;
+}
+
+.kpi-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.tap-status-section {
+  grid-column: span 8;
+}
+
+.warnings-section {
+  grid-column: span 4;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-header .section-title {
+  margin: 0;
+}
+
+.flow-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #4a5b6c;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.consumption-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.consumption-note {
+  font-size: 13px;
+  color: #856404;
+  background: #fff3cd;
+  padding: 10px;
+  border-radius: 6px;
+  margin: 0 0 12px 0;
+}
+
+.sample-history-btn {
+  padding: 8px 14px;
+  border: 1px solid #ffd28a;
+  background: #fff4e0;
+  color: #8a5a00;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.sample-history-btn:hover {
+  background: #ffe9c2;
+}
+
+.chart-source-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.chart-source-badge.sim {
+  background: #fff4e0;
+  color: #8a5a00;
+}
+
+.chart-source-badge.live {
+  background: #e6f7ee;
+  color: #146c3a;
 }
 
 .flow-cards {
@@ -56,6 +152,11 @@
 }
 
 @media (max-width: 1200px) {
+  .tap-status-section,
+  .warnings-section {
+    grid-column: span 12;
+  }
+
   .discrepancy-section {
     grid-column: span 6;
   }
@@ -76,13 +177,18 @@
   }
 
   .flow-cards-section,
+  .kpi-section,
+  .tap-status-section,
+  .warnings-section,
+  .consumption-section,
   .discrepancy-section,
   .chart-section,
   .alerts-section {
     grid-column: span 1;
   }
 
-  .flow-cards {
+  .flow-cards,
+  .consumption-charts {
     grid-template-columns: 1fr;
   }
 }

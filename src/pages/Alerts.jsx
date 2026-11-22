@@ -3,28 +3,85 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import AlertList from '../components/AlertList';
 import storageService from '../services/storageService';
+import apiService from '../services/apiService';
+import useMonitoring from '../hooks/useMonitoring';
 import './Alerts.css';
 
-const Alerts = () => {
-  const [currentPage, setCurrentPage] = useState('alerts');
-  const [settings, setSettings] = useState(storageService.loadSettings());
-  const [alerts, setAlerts] = useState(storageService.loadAlerts());
+const Alerts = ({ currentPage = 'alerts', onPageChange }) => {
+  const monitoring = useMonitoring();
+  const [settings] = useState(storageService.loadSettings());
+  const [localTick, setLocalTick] = useState(0);
+  const [remoteAlerts, setRemoteAlerts] = useState([]);
+  const [remoteError, setRemoteError] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [outletFilter, setOutletFilter] = useState('all');
+  const isHardware = settings.mode === 'HARDWARE_MODE';
 
+  // Local alerts refresh whenever monitoring raises a new one
+  const localAlerts = React.useMemo(
+    () => storageService.loadAlerts(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monitoring.alertsVersion, localTick]
+  );
+
+  // Backend alert history (hardware mode only)
   useEffect(() => {
-    setAlerts(storageService.loadAlerts());
-  }, []);
+    if (!isHardware) return undefined;
+    let cancelled = false;
+    const load = () => {
+      apiService.getAlerts()
+        .then(list => {
+          if (cancelled) return;
+          setRemoteAlerts(list);
+          setRemoteError(null);
+        })
+        .catch(error => {
+          if (!cancelled) setRemoteError(error.message);
+        });
+    };
+    load();
+    const interval = setInterval(load, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isHardware, localTick]);
+
+  const alerts = [...remoteAlerts, ...localAlerts].sort((a, b) => b.timestamp - a.timestamp);
 
   const handleAcknowledgeAlert = (alertId) => {
+    const remote = remoteAlerts.find(a => a.id === alertId);
+    if (remote) {
+      setRemoteAlerts(prev => prev.map(a => (a.id === alertId ? { ...a, acknowledged: true } : a)));
+      apiService.acknowledgeAlert(remote.remoteId).catch(error => setRemoteError(error.message));
+      return;
+    }
     storageService.acknowledgeAlert(alertId);
-    setAlerts(storageService.loadAlerts());
+    setLocalTick(t => t + 1);
   };
 
   const handleClearAlerts = () => {
-    if (window.confirm('Clear all alert history? This cannot be undone.')) {
+    if (window.confirm('Clear local alert history? This cannot be undone.')) {
       storageService.clearAlerts();
-      setAlerts([]);
+      setLocalTick(t => t + 1);
     }
+  };
+
+  const handleExportCsv = () => {
+    const header = ['timestamp', 'type', 'severity', 'outlet', 'message', 'value', 'unit', 'source', 'acknowledged'];
+    const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = filteredAlerts.map(a => [
+      new Date(a.timestamp).toISOString(), a.type, a.severity, a.outlet, a.message,
+      a.value, a.unit, a.source === 'HARDWARE_MODE' ? 'LIVE' : 'SIMULATED', a.acknowledged
+    ].map(escape).join(','));
+    const blob = new Blob([[header.join(','), ...rows].join(String.fromCharCode(10))], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `intelliwater-alerts-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleClearDemoHistory = () => {
@@ -34,10 +91,13 @@ const Alerts = () => {
     }
   };
 
+  const alertTypes = [...new Set(alerts.map(a => a.type))];
+
   const filteredAlerts = alerts.filter(alert => {
-    if (filter === 'all') return true;
-    if (filter === 'unacknowledged') return !alert.acknowledged;
-    if (filter === 'acknowledged') return alert.acknowledged;
+    if (filter === 'unacknowledged' && alert.acknowledged) return false;
+    if (filter === 'acknowledged' && !alert.acknowledged) return false;
+    if (typeFilter !== 'all' && alert.type !== typeFilter) return false;
+    if (outletFilter !== 'all' && alert.outlet !== outletFilter) return false;
     return true;
   });
 
@@ -50,11 +110,11 @@ const Alerts = () => {
 
   return (
     <div className="alerts-page">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar currentPage={currentPage} onPageChange={onPageChange} />
       <Header 
         pageTitle="Alerts & History" 
-        mode={settings.mode}
-        connectionStatus="DISCONNECTED"
+        mode={monitoring.source}
+        connectionStatus={monitoring.connectionStatus}
       />
       
       <main className="main-content">
@@ -100,6 +160,32 @@ const Alerts = () => {
                 Acknowledged
               </button>
             </div>
+            <div className="filter-selects">
+              <label>
+                Type
+                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                  <option value="all">All types</option>
+                  {alertTypes.map(type => (
+                    <option key={type} value={type}>{String(type).replaceAll('_', ' ')}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Tap / outlet
+                <select value={outletFilter} onChange={(e) => setOutletFilter(e.target.value)}>
+                  <option value="all">All outlets</option>
+                  <option value="main_inlet">Main inlet</option>
+                  <option value="kitchen">Kitchen</option>
+                  <option value="bathroom">Bathroom</option>
+                </select>
+              </label>
+              <button className="filter-btn" onClick={handleExportCsv} disabled={filteredAlerts.length === 0}>
+                ⬇️ Export CSV
+              </button>
+            </div>
+            {isHardware && remoteError && (
+              <p className="data-note">Backend alert history unavailable: {remoteError}</p>
+            )}
           </div>
 
           <div className="alert-list-section">
@@ -117,7 +203,7 @@ const Alerts = () => {
                 className="action-btn danger"
                 onClick={handleClearAlerts}
               >
-                🗑️ Clear Alert History
+                🗑️ Clear Local Alert History
               </button>
               <button 
                 className="action-btn warning"

@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import storageService from '../services/storageService';
 import './SystemInfo.css';
 
-const SystemInfo = () => {
-  const [currentPage, setCurrentPage] = useState('system');
-  const [settings, setSettings] = useState(storageService.loadSettings());
+const SystemInfo = ({ currentPage = 'system', onPageChange }) => {
+  const [settings] = useState(storageService.loadSettings());
 
   return (
     <div className="system-info-page">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar currentPage={currentPage} onPageChange={onPageChange} />
       <Header 
         pageTitle="System Information" 
         mode={settings.mode}
-        connectionStatus="DISCONNECTED"
+        connectionStatus={settings.mode === 'DEMO_MODE' ? 'SIMULATED' : 'DISCONNECTED'}
       />
       
       <main className="main-content">
@@ -176,17 +175,25 @@ const SystemInfo = () => {
                 <span className="feature-status">✅ Implemented</span>
                 <span className="feature-name">Flow trend charts</span>
               </div>
+              <div className="feature-item implemented">
+                <span className="feature-status">✅ Implemented</span>
+                <span className="feature-name">Cumulative and daily/hourly water consumption charts</span>
+              </div>
+              <div className="feature-item implemented">
+                <span className="feature-status">✅ Implemented</span>
+                <span className="feature-name">Individual tap status, continuous-flow and wastage warnings</span>
+              </div>
+              <div className="feature-item implemented">
+                <span className="feature-status">✅ Implemented</span>
+                <span className="feature-name">FastAPI backend integration (apiService) in Hardware mode</span>
+              </div>
               <div className="feature-item simulated">
                 <span className="feature-status">🔶 Simulated</span>
-                <span className="feature-name">Sensor data (demo sensor service)</span>
+                <span className="feature-name">Sensor data in Demo mode (demo sensor service, labelled SIMULATED)</span>
               </div>
               <div className="feature-item future">
                 <span className="feature-status">🔮 Future</span>
-                <span className="feature-name">ESP32 hardware connection</span>
-              </div>
-              <div className="feature-item future">
-                <span className="feature-status">🔮 Future</span>
-                <span className="feature-name">Real sensor data integration</span>
+                <span className="feature-name">ESP32 firmware and backend deployment</span>
               </div>
               <div className="feature-item future">
                 <span className="feature-status">🔮 Future</span>

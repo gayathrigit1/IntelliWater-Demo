@@ -141,6 +141,25 @@ function resetDemo() {
   notifyListeners();
 }
 
+// Generate a clearly simulated hourly consumption history (DEMO_MODE only)
+// Returns buckets keyed 'YYYY-MM-DDTHH' -> litres for the last `days` days
+function generateSampleConsumption(now = Date.now(), days = 7) {
+  // Typical household profile: morning and evening peaks (litres per hour)
+  const hourlyProfile = [2, 1, 1, 1, 2, 8, 30, 45, 35, 20, 15, 18,
+    22, 18, 12, 10, 14, 22, 35, 40, 28, 15, 8, 4];
+  const buckets = {};
+  const pad = n => String(n).padStart(2, '0');
+  const start = new Date(now);
+  start.setMinutes(0, 0, 0);
+
+  for (let i = days * 24 - 1; i >= 0; i--) {
+    const d = new Date(start.getTime() - i * 60 * 60 * 1000);
+    const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}`;
+    buckets[key] = Number(addVariation(hourlyProfile[d.getHours()], 0.25).toFixed(2));
+  }
+  return buckets;
+}
+
 // Initialize
 startSimulation();
 
@@ -154,5 +173,6 @@ export default {
   onReadingUpdate,
   offReadingUpdate,
   resetDemo,
+  generateSampleConsumption,
   OUTLETS
 };

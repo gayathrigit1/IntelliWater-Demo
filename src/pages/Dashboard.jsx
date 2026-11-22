@@ -5,142 +5,250 @@ import FlowStatusCard from '../components/FlowStatusCard';
 import MetricCard from '../components/MetricCard';
 import AlertList from '../components/AlertList';
 import FlowChart from '../components/FlowChart';
+import ConsumptionChart from '../components/ConsumptionChart';
+import TapStatusPanel from '../components/TapStatusPanel';
+import FlowWarnings from '../components/FlowWarnings';
+import DataSourceBanner from '../components/DataSourceBanner';
+import useMonitoring from '../hooks/useMonitoring';
+import monitoringService from '../services/monitoringService';
 import demoSensorService from '../services/demoSensorService';
 import storageService from '../services/storageService';
+import apiService from '../services/apiService';
 import flowUtils from '../utils/flowUtils';
 import './Dashboard.css';
 
-const Dashboard = () => {
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [settings, setSettings] = useState(storageService.loadSettings());
-  const [flowData, setFlowData] = useState({});
-  const [classifications, setClassifications] = useState({});
-  const [alerts, setAlerts] = useState(storageService.loadAlerts());
-  const [discrepancy, setDiscrepancy] = useState(null);
+const OUTLETS = ['main_inlet', 'kitchen', 'bathroom'];
+const CONSUMPTION_REFRESH_MS = 10000;
+
+const Dashboard = ({ currentPage = 'dashboard', onPageChange }) => {
+  const monitoring = useMonitoring();
+  const [settings] = useState(storageService.loadSettings());
+  const [alertsTick, setAlertsTick] = useState(0);
   const [flowHistory, setFlowHistory] = useState([]);
+  const [consumption, setConsumption] = useState(null);
 
+  const { readings, classifications, source } = monitoring;
+  const isDemo = source === 'DEMO_MODE';
+
+  // Rolling main-inlet trend (last 20 readings)
   useEffect(() => {
-    const updateReadings = () => {
-      const readings = demoSensorService.getAllReadings();
-      const newFlowData = {};
-      const newClassifications = {};
+    const interval = setInterval(() => {
+      const inlet = monitoringService.getSnapshot().readings.main_inlet;
+      if (!inlet) return;
+      setFlowHistory(prev => [...prev, { timestamp: inlet.timestamp, value: inlet.flow }].slice(-20));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-      readings.forEach(reading => {
-        newFlowData[reading.outlet] = reading.flow;
-        newClassifications[reading.outlet] = flowUtils.classifyFlow(
-          reading.flow,
-          settings.thresholds[reading.outlet] || settings.thresholds.kitchen
-        );
-      });
-
-      setFlowData(newFlowData);
-      setClassifications(newClassifications);
-
-      // Calculate discrepancy
-      if (newFlowData.main_inlet !== undefined && 
-          newFlowData.kitchen !== undefined && 
-          newFlowData.bathroom !== undefined) {
-        const disc = flowUtils.calculateDiscrepancy(
-          newFlowData.main_inlet,
-          newFlowData.kitchen,
-          newFlowData.bathroom
-        );
-        setDiscrepancy(disc);
-      }
-
-      // Update flow history for chart
-      setFlowHistory(prev => {
-        const newHistory = [...prev, {
-          timestamp: Date.now(),
-          value: newFlowData.main_inlet || 0
-        }];
-        return newHistory.slice(-20); // Keep last 20 points
+  // Hourly / daily consumption history
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      monitoringService.getConsumptionHistory().then(history => {
+        if (!cancelled) setConsumption(history);
       });
     };
+    load();
+    const interval = setInterval(load, CONSUMPTION_REFRESH_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [source, alertsTick]);
 
-    updateReadings();
-    const interval = setInterval(updateReadings, 1000);
+  // Re-read alerts whenever the monitoring service raises one or the user changes them
+  const alerts = React.useMemo(
+    () => storageService.loadAlerts(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monitoring.alertsVersion, alertsTick]
+  );
 
-    return () => clearInterval(interval);
-  }, [settings]);
+  const inlet = readings.main_inlet;
+  const discrepancy = readings.main_inlet && readings.kitchen && readings.bathroom
+    ? flowUtils.calculateDiscrepancy(readings.main_inlet.flow, readings.kitchen.flow, readings.bathroom.flow)
+    : null;
+  const discrepancyWarning = discrepancy && flowUtils.isDiscrepancySignificant(discrepancy, settings.discrepancyTolerance);
+  const runningTaps = monitoringService.TAP_OUTLETS.filter(t => monitoring.tapUsage[t]?.running).length;
+  const warningCount = monitoring.activeWarnings.length;
 
   const handleAcknowledgeAlert = (alertId) => {
     storageService.acknowledgeAlert(alertId);
-    setAlerts(storageService.loadAlerts());
+    setAlertsTick(t => t + 1);
   };
 
   const handleClearAlerts = () => {
     if (window.confirm('Clear all alert history?')) {
       storageService.clearAlerts();
-      setAlerts([]);
+      setAlertsTick(t => t + 1);
     }
   };
 
-  const recentAlerts = alerts.slice(0, 5);
+  const handleLoadSampleHistory = () => {
+    storageService.saveConsumption('DEMO_MODE', demoSensorService.generateSampleConsumption());
+    setAlertsTick(t => t + 1);
+  };
+
+  const sourceBadge = (
+    <span className={`chart-source-badge ${isDemo ? 'sim' : 'live'}`}>
+      {isDemo ? 'SIMULATED' : consumption?.origin === 'backend' ? 'BACKEND' : 'LOCAL (REAL READINGS)'}
+    </span>
+  );
 
   return (
     <div className="dashboard-page">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-      <Header 
-        pageTitle="Dashboard" 
-        mode={settings.mode}
-        connectionStatus="DISCONNECTED"
+      <Sidebar currentPage={currentPage} onPageChange={onPageChange} />
+      <Header
+        pageTitle="Dashboard"
+        mode={source}
+        connectionStatus={monitoring.connectionStatus}
       />
-      
+
       <main className="main-content">
+        <DataSourceBanner
+          source={source}
+          connectionStatus={monitoring.connectionStatus}
+          error={monitoring.error}
+          lastUpdated={monitoring.lastUpdated}
+          apiBaseUrl={apiService.getBaseUrl()}
+        />
+
         <div className="dashboard-grid">
-          {/* Flow Monitoring Cards */}
+          <div className="kpi-section">
+            <MetricCard
+              title="Total Flow Rate"
+              value={inlet ? inlet.flow.toFixed(2) : '--'}
+              unit="L/min"
+              icon="💧"
+              color="#0d4f6e"
+              status={inlet ? flowUtils.getClassificationLabel(classifications.main_inlet) : 'No data'}
+              subtitle="Main inlet, real-time"
+            />
+            <MetricCard
+              title="Cumulative Consumption"
+              value={inlet && inlet.cumulativeVolume !== null ? inlet.cumulativeVolume.toFixed(1) : '--'}
+              unit="L"
+              icon="📈"
+              color="#1a8fb5"
+              subtitle={isDemo ? 'Since simulation started' : 'Meter total reported by device'}
+            />
+            <MetricCard
+              title="Today's Consumption"
+              value={consumption ? consumption.today.toFixed(1) : '--'}
+              unit="L"
+              icon="📅"
+              color="#6f42c1"
+              subtitle={new Date().toLocaleDateString()}
+            />
+            <MetricCard
+              title="Active Taps"
+              value={`${runningTaps} / ${monitoringService.TAP_OUTLETS.length}`}
+              unit=""
+              icon="🚰"
+              color={warningCount > 0 ? '#dc3545' : '#28a745'}
+              status={warningCount > 0 ? `${warningCount} active warning${warningCount > 1 ? 's' : ''}` : 'No warnings'}
+            />
+          </div>
+
           <div className="flow-cards-section">
-            <h2 className="section-title">Flow Monitoring</h2>
+            <div className="section-header">
+              <h2 className="section-title">Real-time Flow Monitoring</h2>
+              <div className="flow-legend">
+                {['LOW_FLOW', 'NORMAL_FLOW', 'HEAVY_FLOW'].map(c => (
+                  <span key={c} className="legend-item">
+                    <span className="legend-dot" style={{ background: flowUtils.getClassificationColor(c) }} />
+                    {flowUtils.getClassificationLabel(c)}
+                  </span>
+                ))}
+              </div>
+            </div>
             <div className="flow-cards">
-              <FlowStatusCard
-                outlet="main_inlet"
-                flow={flowData.main_inlet || 0}
-                classification={classifications.main_inlet || 'NO_FLOW'}
-                thresholds={settings.thresholds.main_inlet}
-                source="DEMO_MODE"
+              {OUTLETS.map(outlet => (
+                <FlowStatusCard
+                  key={outlet}
+                  outlet={outlet}
+                  flow={readings[outlet] ? readings[outlet].flow : null}
+                  cumulativeVolume={readings[outlet] ? readings[outlet].cumulativeVolume : null}
+                  simulated={Boolean(readings[outlet]?.simulated)}
+                  classification={classifications[outlet] || 'NO_FLOW'}
+                  thresholds={settings.thresholds[outlet]}
+                  source={source}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="tap-status-section">
+            <h2 className="section-title">Individual Tap Status</h2>
+            <TapStatusPanel
+              readings={readings}
+              classifications={classifications}
+              tapUsage={monitoring.tapUsage}
+              warnings={monitoring.activeWarnings}
+              timer={storageService.loadTimerState()}
+              source={source}
+              now={monitoring.lastUpdated}
+            />
+          </div>
+
+          <div className="warnings-section">
+            <h2 className="section-title">Continuous Flow &amp; Wastage</h2>
+            <FlowWarnings
+              warnings={monitoring.activeWarnings}
+              limits={{
+                continuousFlowLimitMinutes: settings.continuousFlowLimitMinutes,
+                wastageLimitLitres: settings.wastageLimitLitres
+              }}
+            />
+          </div>
+
+          <div className="consumption-section">
+            <div className="section-header">
+              <h2 className="section-title">Water Consumption</h2>
+              {isDemo && (
+                <button className="sample-history-btn" onClick={handleLoadSampleHistory}>
+                  Load simulated 7-day history
+                </button>
+              )}
+            </div>
+            {consumption?.error && (
+              <p className="consumption-note">
+                Backend history unavailable ({consumption.error}); showing consumption recorded locally from real readings.
+              </p>
+            )}
+            <div className="consumption-charts">
+              <ConsumptionChart
+                title="Hourly Consumption (last 24 h)"
+                data={consumption ? consumption.hourly : []}
+                labelEvery={4}
+                badge={sourceBadge}
               />
-              <FlowStatusCard
-                outlet="kitchen"
-                flow={flowData.kitchen || 0}
-                classification={classifications.kitchen || 'NO_FLOW'}
-                thresholds={settings.thresholds.kitchen}
-                source="DEMO_MODE"
-              />
-              <FlowStatusCard
-                outlet="bathroom"
-                flow={flowData.bathroom || 0}
-                classification={classifications.bathroom || 'NO_FLOW'}
-                thresholds={settings.thresholds.bathroom}
-                source="DEMO_MODE"
+              <ConsumptionChart
+                title="Daily Consumption (last 7 days)"
+                data={consumption ? consumption.daily : []}
+                color="#6f42c1"
+                badge={sourceBadge}
               />
             </div>
           </div>
 
-          {/* Discrepancy Card */}
           <div className="discrepancy-section">
             <h2 className="section-title">Flow Discrepancy</h2>
             <MetricCard
               title="Discrepancy"
-              value={discrepancy ? discrepancy.value.toFixed(2) : '0.00'}
+              value={discrepancy ? discrepancy.value.toFixed(2) : '--'}
               unit="L/min"
-              status={discrepancy && flowUtils.isDiscrepancySignificant(discrepancy, settings.discrepancyTolerance) 
-                ? 'Warning' 
-                : 'Normal'}
+              status={discrepancy ? (discrepancyWarning ? 'Warning' : 'Normal') : 'No data'}
               icon="🔍"
-              color={discrepancy && flowUtils.isDiscrepancySignificant(discrepancy, settings.discrepancyTolerance) 
-                ? '#ffc107' 
-                : '#28a745'}
+              color={discrepancyWarning ? '#ffc107' : '#28a745'}
               subtitle="Inlet - (Kitchen + Bathroom)"
             />
-            {discrepancy && flowUtils.isDiscrepancySignificant(discrepancy, settings.discrepancyTolerance) && (
+            {discrepancyWarning && (
               <p className="discrepancy-note">
                 ⚠️ Possible leakage, unmeasured use, or sensor calibration difference
               </p>
             )}
           </div>
 
-          {/* Flow Trend Chart */}
           <div className="chart-section">
             <h2 className="section-title">Flow Trend</h2>
             <FlowChart
@@ -150,11 +258,12 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Recent Alerts */}
           <div className="alerts-section">
             <h2 className="section-title">Recent Alerts</h2>
             <AlertList
-              alerts={recentAlerts}
+              alerts={alerts
+                .filter(alert => source !== 'HARDWARE_MODE' || alert.source === 'HARDWARE_MODE')
+                .slice(0, 5)}
               onAcknowledge={handleAcknowledgeAlert}
               onClear={handleClearAlerts}
             />

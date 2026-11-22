@@ -1,16 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import storageService from '../services/storageService';
+import apiService from '../services/apiService';
+import monitoringService from '../services/monitoringService';
 import flowUtils from '../utils/flowUtils';
 import './Settings.css';
 
-const Settings = () => {
-  const [currentPage, setCurrentPage] = useState('settings');
+const Settings = ({ currentPage = 'settings', onPageChange }) => {
   const [settings, setSettings] = useState(storageService.loadSettings());
   const [tempSettings, setTempSettings] = useState(storageService.loadSettings());
   const [validationErrors, setValidationErrors] = useState({});
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [connectionTest, setConnectionTest] = useState(null);
+
+  const handleTestConnection = async () => {
+    // Test against the URL currently typed in, without saving it
+    const saved = storageService.loadSettings();
+    storageService.saveSettings({ ...saved, apiBaseUrl: tempSettings.apiBaseUrl });
+    setConnectionTest({ pending: true });
+    const result = await apiService.checkHealth();
+    storageService.saveSettings(saved);
+    setConnectionTest(result);
+  };
 
   const handleThresholdChange = (outlet, field, value) => {
     const numValue = parseFloat(value);
@@ -49,6 +61,18 @@ const Settings = () => {
       errors.defaultTimerDuration = 'Default timer duration must be positive';
     }
 
+    if (!(tempSettings.continuousFlowLimitMinutes > 0)) {
+      errors.continuousFlowLimitMinutes = 'Continuous flow limit must be positive';
+    }
+
+    if (!(tempSettings.wastageLimitLitres > 0)) {
+      errors.wastageLimitLitres = 'Wastage limit must be positive';
+    }
+
+    if (tempSettings.apiBaseUrl && !/^https?:\/\//.test(tempSettings.apiBaseUrl)) {
+      errors.apiBaseUrl = 'Backend URL must start with http:// or https://';
+    }
+
     if (tempSettings.discrepancyTolerance < 0) {
       errors.discrepancyTolerance = 'Discrepancy tolerance cannot be negative';
     }
@@ -61,6 +85,12 @@ const Settings = () => {
     if (validateSettings()) {
       storageService.saveSettings(tempSettings);
       setSettings(tempSettings);
+      monitoringService.refresh();
+      if (tempSettings.mode === 'HARDWARE_MODE') {
+        apiService.pushSettings(tempSettings).catch(error =>
+          console.warn('[Settings] Could not sync settings to backend:', error.message)
+        );
+      }
       alert('Settings saved successfully');
     }
   };
@@ -75,6 +105,7 @@ const Settings = () => {
   const handleResetAllData = () => {
     if (window.confirm('This will clear all settings, alerts, and history. Are you sure?')) {
       storageService.clearAllData();
+      monitoringService.refresh();
       const defaults = storageService.DEFAULT_SETTINGS;
       setSettings(defaults);
       setTempSettings(defaults);
@@ -85,11 +116,11 @@ const Settings = () => {
 
   return (
     <div className="settings-page">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar currentPage={currentPage} onPageChange={onPageChange} />
       <Header 
         pageTitle="Settings" 
         mode={settings.mode}
-        connectionStatus="DISCONNECTED"
+        connectionStatus={settings.mode === 'DEMO_MODE' ? 'SIMULATED' : monitoringService.getSnapshot().connectionStatus}
       />
       
       <main className="main-content">
@@ -97,20 +128,66 @@ const Settings = () => {
           <div className="settings-section">
             <h2>Operating Mode</h2>
             <div className="setting-group">
-              <label>Current Mode:</label>
-              <div className="mode-display">
-                <span className={`mode-badge ${tempSettings.mode.toLowerCase()}`}>
-                  {tempSettings.mode === 'DEMO_MODE' ? '🔶 DEMO MODE' : '🟢 HARDWARE MODE'}
-                </span>
+              <label>Data Source:</label>
+              <div className="mode-options">
+                <label className={`mode-option ${tempSettings.mode === 'DEMO_MODE' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="mode"
+                    value="DEMO_MODE"
+                    checked={tempSettings.mode === 'DEMO_MODE'}
+                    onChange={() => handleGeneralChange('mode', 'DEMO_MODE')}
+                  />
+                  <span>🔶 Demo mode — simulated readings (development only)</span>
+                </label>
+                <label className={`mode-option ${tempSettings.mode === 'HARDWARE_MODE' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="mode"
+                    value="HARDWARE_MODE"
+                    checked={tempSettings.mode === 'HARDWARE_MODE'}
+                    onChange={() => handleGeneralChange('mode', 'HARDWARE_MODE')}
+                  />
+                  <span>🟢 Hardware mode — real sensor readings from the FastAPI backend</span>
+                </label>
               </div>
               <p className="setting-description">
-                Demo mode uses simulated sensor data. Hardware mode connects to ESP32 (not yet implemented).
+                Simulated readings are always labelled SIMULATED. In hardware mode no simulated values are shown, even if the backend is unreachable.
+              </p>
+            </div>
+
+            <div className="setting-group">
+              <label>FastAPI Backend URL:</label>
+              <input
+                type="text"
+                value={tempSettings.apiBaseUrl}
+                onChange={(e) => handleGeneralChange('apiBaseUrl', e.target.value.trim())}
+                placeholder={apiService.DEFAULT_BASE_URL}
+              />
+              {validationErrors.apiBaseUrl && (
+                <div className="error-message">{validationErrors.apiBaseUrl}</div>
+              )}
+              <div className="connection-test">
+                <button type="button" className="test-connection-btn" onClick={handleTestConnection}>
+                  🔌 Test Connection
+                </button>
+                {connectionTest?.pending && <span className="connection-result">Checking...</span>}
+                {connectionTest && !connectionTest.pending && (
+                  <span className={`connection-result ${connectionTest.healthy ? 'ok' : 'fail'}`}>
+                    {connectionTest.healthy
+                      ? `Connected to ${connectionTest.baseUrl}`
+                      : connectionTest.error}
+                  </span>
+                )}
+              </div>
+              <p className="setting-description">
+                Leave empty to use {apiService.DEFAULT_BASE_URL} (set VITE_API_BASE_URL to change the default).
               </p>
             </div>
 
             {tempSettings.mode === 'HARDWARE_MODE' && (
               <div className="setting-group">
-                <label>ESP32 Address:</label>
+                <label>ESP32 Address (optional):</label>
                 <input
                   type="text"
                   value={tempSettings.hardwareAddress}
@@ -118,7 +195,7 @@ const Settings = () => {
                   placeholder="e.g., http://192.168.1.100"
                 />
                 <p className="setting-description">
-                  Enter the IP address or hostname of your ESP32 device
+                  IP address or hostname of the ESP32 device, for reference by the backend
                 </p>
               </div>
             )}
@@ -127,17 +204,77 @@ const Settings = () => {
           <div className="settings-section">
             <h2>Timer Settings</h2>
             <div className="setting-group">
-              <label>Default Timer Duration (minutes):</label>
-              <input
-                type="number"
-                value={tempSettings.defaultTimerDuration}
-                onChange={(e) => handleGeneralChange('defaultTimerDuration', parseFloat(e.target.value))}
-                min="1"
-                max="1440"
-                step="0.5"
-              />
+              <label>Default Tap Timer:</label>
+              <div className="timer-duration-options">
+                {[5, 10].map(minutes => (
+                  <button
+                    key={minutes}
+                    type="button"
+                    className={`duration-option ${tempSettings.defaultTimerDuration === minutes ? 'selected' : ''}`}
+                    onClick={() => handleGeneralChange('defaultTimerDuration', minutes)}
+                  >
+                    {minutes} minutes
+                  </button>
+                ))}
+                <input
+                  type="number"
+                  aria-label="Custom default timer minutes"
+                  value={tempSettings.defaultTimerDuration}
+                  onChange={(e) => handleGeneralChange('defaultTimerDuration', parseFloat(e.target.value))}
+                  min="1"
+                  max="1440"
+                  step="0.5"
+                />
+              </div>
               {validationErrors.defaultTimerDuration && (
                 <div className="error-message">{validationErrors.defaultTimerDuration}</div>
+              )}
+              <p className="setting-description">
+                Used as the highlighted quick-start timer on the Smart Tap Timer page.
+              </p>
+            </div>
+
+            <div className="setting-group">
+              <label>Continuous Flow Warning After (minutes):</label>
+              <div className="timer-duration-options">
+                {[5, 10].map(minutes => (
+                  <button
+                    key={minutes}
+                    type="button"
+                    className={`duration-option ${tempSettings.continuousFlowLimitMinutes === minutes ? 'selected' : ''}`}
+                    onClick={() => handleGeneralChange('continuousFlowLimitMinutes', minutes)}
+                  >
+                    {minutes} minutes
+                  </button>
+                ))}
+                <input
+                  type="number"
+                  aria-label="Custom continuous flow limit minutes"
+                  value={tempSettings.continuousFlowLimitMinutes}
+                  onChange={(e) => handleGeneralChange('continuousFlowLimitMinutes', parseFloat(e.target.value))}
+                  min="0.5"
+                  step="0.5"
+                />
+              </div>
+              {validationErrors.continuousFlowLimitMinutes && (
+                <div className="error-message">{validationErrors.continuousFlowLimitMinutes}</div>
+              )}
+              <p className="setting-description">
+                A tap running without a break for this long raises a continuous-flow warning.
+              </p>
+            </div>
+
+            <div className="setting-group">
+              <label>Water Wastage Warning Above (litres per continuous run):</label>
+              <input
+                type="number"
+                value={tempSettings.wastageLimitLitres}
+                onChange={(e) => handleGeneralChange('wastageLimitLitres', parseFloat(e.target.value))}
+                min="1"
+                step="1"
+              />
+              {validationErrors.wastageLimitLitres && (
+                <div className="error-message">{validationErrors.wastageLimitLitres}</div>
               )}
             </div>
 

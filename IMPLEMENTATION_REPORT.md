@@ -251,3 +251,50 @@ None - The application builds and runs successfully without errors.
 ## Conclusion
 
 The IntelliWater frontend is a complete, functional prototype ready for ESP32 hardware integration. The architecture is designed to minimize changes when transitioning from demo mode to hardware mode, with clear separation between presentation, data services, and business logic. All requirements from the prompt have been implemented, including the essential smart tap timer with correct extension behavior, configurable thresholds, alert system, and comprehensive documentation.
+
+---
+
+## Update: IoT Monitoring Dashboard & FastAPI Integration
+
+### Data sources
+- **Demo mode** (development only): readings come from `demoSensorService` and are labelled **SIMULATED** on every card, chart, banner and alert.
+- **Hardware mode**: readings come only from the FastAPI backend via `src/services/apiService.js`. If the backend is unreachable, the UI shows "Backend unreachable" and no values — it never falls back to simulated data.
+- Backend URL: Settings → FastAPI Backend URL, or `VITE_API_BASE_URL` (see `.env.example`), default `http://localhost:8000`.
+
+### Backend endpoints used (`apiService.ENDPOINTS`, matches `Intelliwater-Backend/app/routers`)
+| Purpose | Method & path |
+|---|---|
+| Health | `GET /api/health` |
+| Tap id ↔ outlet name | `GET /api/taps` (`tap_name` = `main_inlet` / `kitchen` / `bathroom`) |
+| Latest reading per tap | `GET /api/readings/latest?tap_id=N` (404 = no readings yet) |
+| Today's litres per tap (cumulative) / daily chart | `GET /api/analytics/daily?day=YYYY-MM-DD` |
+| Hourly chart | `GET /api/analytics/hourly?day=YYYY-MM-DD` |
+| Alerts / acknowledge | `GET /api/alerts`, `POST /api/alerts/{id}/resolve` |
+| Timers | `POST /api/taps/{id}/timer` with `action` = `start` / `extend` / `stop` (whole minutes, backend caps at 10) |
+| Default timer setting | `PATCH /api/taps/{id}` `{timer_duration_minutes}` |
+
+- Readings with `source: "simulation"` (from `POST /api/simulate`) are labelled SIMULATED even in Hardware mode.
+- A reading older than 30 s (backend `FLOW_STATE_WINDOW_SECONDS`) is treated as no flow.
+- Flow classification in Hardware mode uses the backend's `flow_status` (thresholds in the backend `.env`).
+- Charts use the main inlet's litres; if the inlet has no data, the outlets are summed.
+- Analytics days are UTC days (backend behaviour).
+- Backend CORS must allow the Vite origin (default `http://localhost:5173` is already allowed).
+
+### New modules
+- `services/monitoringService.js` + `hooks/useMonitoring.js`: single polling loop shared by all pages; tracks per-tap sessions, cumulative litres, and raises continuous-flow / water-wastage alerts.
+- `utils/consumptionUtils.js`: hourly buckets → hourly (24 h) and daily (7 day) series.
+- `utils/usageUtils.js`: continuous-flow and wastage evaluation.
+- Components: `DataSourceBanner`, `ConsumptionChart`, `TapStatusPanel`, `FlowWarnings`.
+
+### Feature checklist
+- Dashboard KPIs: live flow (L/min), cumulative litres, today's consumption, active warnings.
+- Low / normal / heavy flow classification with legend.
+- Individual tap status table (Kitchen, Bathroom).
+- 5- and 10-minute quick-start timers; default timer configurable in Settings.
+- Continuous-flow (5/10 min, configurable) and water-wastage (litres per run) warnings.
+- Hourly and daily consumption charts.
+- Alert history with status/type/outlet filters, CSV export, backend alerts in hardware mode.
+- Sidebar navigation fixed (page state lifted to `App.jsx`).
+
+### Tests
+`npm test` runs Node's built-in test runner on `tests/` (usage, consumption and API normalizer utilities).

@@ -10,22 +10,24 @@ import './App.css';
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
 
+  const pageProps = { currentPage, onPageChange: setCurrentPage };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard {...pageProps} />;
       case 'flow':
-        return <FlowMonitoring />;
+        return <FlowMonitoring {...pageProps} />;
       case 'timer':
-        return <TapManagement />;
+        return <TapManagement {...pageProps} />;
       case 'alerts':
-        return <Alerts />;
+        return <Alerts {...pageProps} />;
       case 'settings':
-        return <Settings />;
+        return <Settings {...pageProps} />;
       case 'system':
-        return <SystemInfo />;
+        return <SystemInfo {...pageProps} />;
       default:
-        return <Dashboard />;
+        return <Dashboard {...pageProps} />;
     }
   };
 

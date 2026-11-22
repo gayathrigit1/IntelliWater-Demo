@@ -87,7 +87,7 @@ const FlowChart = ({ data, title, unit }) => {
 
     // Y-axis labels
     for (let i = 0; i <= 5; i++) {
-      const value = minValue + (valueRange * (i / 5));
+      const value = maxValue - (valueRange * (i / 5));
       const y = padding + (height - 2 * padding) * (i / 5);
       ctx.fillText(value.toFixed(1), padding - 8, y + 4);
     }

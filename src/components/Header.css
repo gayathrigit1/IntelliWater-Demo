@@ -69,6 +69,11 @@
   border: 1px solid #ffeeba;
 }
 
+.connection-badge.simulated {
+  background: #fff4e0;
+  color: #8a5a00;
+}
+
 .connection-badge.disconnected {
   background: #f8d7da;
   color: #721c24;
