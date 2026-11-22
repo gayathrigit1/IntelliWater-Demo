@@ -56,8 +56,8 @@ const TapStatusPanel = ({ readings, classifications, tapUsage, warnings, timer, 
                 <td data-label="Tap">
                   <span className="tap-name">{tap.icon} {tap.label}</span>
                   {reading && (
-                    <span className={`tap-source ${source === 'HARDWARE_MODE' ? 'live' : 'sim'}`}>
-                      {source === 'HARDWARE_MODE' ? 'LIVE' : 'SIMULATED'}
+                    <span className={`tap-source ${source === 'HARDWARE_MODE' && !reading?.simulated ? 'live' : 'sim'}`}>
+                      {source === 'HARDWARE_MODE' && !reading?.simulated ? 'LIVE' : 'SIMULATED'}
                     </span>
                   )}
                 </td>

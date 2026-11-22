@@ -261,17 +261,24 @@ The IntelliWater frontend is a complete, functional prototype ready for ESP32 ha
 - **Hardware mode**: readings come only from the FastAPI backend via `src/services/apiService.js`. If the backend is unreachable, the UI shows "Backend unreachable" and no values — it never falls back to simulated data.
 - Backend URL: Settings → FastAPI Backend URL, or `VITE_API_BASE_URL` (see `.env.example`), default `http://localhost:8000`.
 
-### Expected backend endpoints (`apiService.ENDPOINTS`)
+### Backend endpoints used (`apiService.ENDPOINTS`, matches `Intelliwater-Backend/app/routers`)
 | Purpose | Method & path |
 |---|---|
 | Health | `GET /api/health` |
-| Latest readings | `GET /api/readings/latest` |
-| Hourly / daily consumption | `GET /api/consumption/hourly`, `GET /api/consumption/daily` |
-| Alerts / acknowledge | `GET /api/alerts`, `POST /api/alerts/{id}/acknowledge` |
-| Timers | `POST /api/timer/start`, `/api/timer/extend`, `/api/timer/stop` |
-| Settings | `POST /api/settings` |
+| Tap id ↔ outlet name | `GET /api/taps` (`tap_name` = `main_inlet` / `kitchen` / `bathroom`) |
+| Latest reading per tap | `GET /api/readings/latest?tap_id=N` (404 = no readings yet) |
+| Today's litres per tap (cumulative) / daily chart | `GET /api/analytics/daily?day=YYYY-MM-DD` |
+| Hourly chart | `GET /api/analytics/hourly?day=YYYY-MM-DD` |
+| Alerts / acknowledge | `GET /api/alerts`, `POST /api/alerts/{id}/resolve` |
+| Timers | `POST /api/taps/{id}/timer` with `action` = `start` / `extend` / `stop` (whole minutes, backend caps at 10) |
+| Default timer setting | `PATCH /api/taps/{id}` `{timer_duration_minutes}` |
 
-Responses are normalized in `src/utils/apiNormalizers.js` (accepts snake_case aliases such as `flow_rate`, `total_litres`, `tap_id`, `recorded_at`). Adjust `ENDPOINTS` if the backend uses different paths.
+- Readings with `source: "simulation"` (from `POST /api/simulate`) are labelled SIMULATED even in Hardware mode.
+- A reading older than 30 s (backend `FLOW_STATE_WINDOW_SECONDS`) is treated as no flow.
+- Flow classification in Hardware mode uses the backend's `flow_status` (thresholds in the backend `.env`).
+- Charts use the main inlet's litres; if the inlet has no data, the outlets are summed.
+- Analytics days are UTC days (backend behaviour).
+- Backend CORS must allow the Vite origin (default `http://localhost:5173` is already allowed).
 
 ### New modules
 - `services/monitoringService.js` + `hooks/useMonitoring.js`: single polling loop shared by all pages; tracks per-tap sessions, cumulative litres, and raises continuous-flow / water-wastage alerts.

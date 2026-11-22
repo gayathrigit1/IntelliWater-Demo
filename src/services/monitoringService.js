@@ -29,7 +29,8 @@ let snapshot = {
   activeWarnings: [],
   lastUpdated: null,
   error: null,
-  alertsVersion: 0
+  alertsVersion: 0,
+  backendSimulated: false
 };
 
 let listeners = new Set();
@@ -188,7 +189,8 @@ async function tick() {
     list.forEach(reading => {
       readings[reading.outlet] = reading;
       const thresholds = settings.thresholds[reading.outlet] || settings.thresholds.kitchen;
-      classifications[reading.outlet] = flowUtils.classifyFlow(reading.flow, thresholds);
+      // Hardware mode: the backend classifies flow with its own thresholds
+      classifications[reading.outlet] = reading.flowStatus || flowUtils.classifyFlow(reading.flow, thresholds);
     });
 
     const now = Date.now();
@@ -198,6 +200,7 @@ async function tick() {
     emit({
       source,
       connectionStatus: source === 'HARDWARE_MODE' ? 'CONNECTED' : 'SIMULATED',
+      backendSimulated: list.some(reading => reading.simulated),
       readings,
       classifications,
       tapUsage,
@@ -264,8 +267,8 @@ async function getConsumptionHistory(now = Date.now()) {
   if (source === 'HARDWARE_MODE') {
     try {
       const [hourlyPoints, dailyPoints] = await Promise.all([
-        apiService.getHourlyConsumption(24),
-        apiService.getDailyConsumption(7)
+        apiService.getHourlyConsumption(now),
+        apiService.getDailyConsumption(7, now)
       ]);
       return {
         source,

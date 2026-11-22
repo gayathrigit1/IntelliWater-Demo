@@ -168,6 +168,7 @@ const Dashboard = ({ currentPage = 'dashboard', onPageChange }) => {
                   outlet={outlet}
                   flow={readings[outlet] ? readings[outlet].flow : null}
                   cumulativeVolume={readings[outlet] ? readings[outlet].cumulativeVolume : null}
+                  simulated={Boolean(readings[outlet]?.simulated)}
                   classification={classifications[outlet] || 'NO_FLOW'}
                   thresholds={settings.thresholds[outlet]}
                   source={source}

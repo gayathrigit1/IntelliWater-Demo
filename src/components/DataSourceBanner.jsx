@@ -1,9 +1,21 @@
 import React from 'react';
 import './DataSourceBanner.css';
+import useMonitoring from '../hooks/useMonitoring';
 
 // Makes it explicit whether the numbers on screen are simulated or real sensor data
 const DataSourceBanner = ({ source, connectionStatus, error, lastUpdated, apiBaseUrl }) => {
+  const { backendSimulated } = useMonitoring();
   if (source === 'HARDWARE_MODE') {
+    if (connectionStatus === 'CONNECTED' && backendSimulated) {
+      return (
+        <div className="data-source-banner simulated" role="status">
+          <strong>BACKEND SIMULATION DATA</strong>
+          <span>
+            The backend is serving readings created by its simulator (source=&quot;simulation&quot;), not real sensor measurements.
+          </span>
+        </div>
+      );
+    }
     if (connectionStatus === 'CONNECTED') {
       return (
         <div className="data-source-banner live" role="status">

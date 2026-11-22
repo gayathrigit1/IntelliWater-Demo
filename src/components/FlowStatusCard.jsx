@@ -2,7 +2,7 @@ import React from 'react';
 import flowUtils from '../utils/flowUtils';
 import './FlowStatusCard.css';
 
-const FlowStatusCard = ({ outlet, flow, classification, thresholds, source, cumulativeVolume }) => {
+const FlowStatusCard = ({ outlet, flow, classification, thresholds, source, cumulativeVolume, simulated = false }) => {
   const hasData = flow !== null && flow !== undefined;
   const getOutletIcon = (outlet) => {
     switch (outlet) {
@@ -30,10 +30,10 @@ const FlowStatusCard = ({ outlet, flow, classification, thresholds, source, cumu
       <div className="flow-card-header">
         <span className="flow-card-icon">{getOutletIcon(outlet)}</span>
         <h3 className="flow-card-title">{getOutletLabel(outlet)}</h3>
-        {source === 'DEMO_MODE' && (
+        {(source === 'DEMO_MODE' || simulated) && (
           <span className="demo-badge" title="Simulated reading - not a real sensor measurement">SIMULATED</span>
         )}
-        {source === 'HARDWARE_MODE' && hasData && (
+        {source === 'HARDWARE_MODE' && hasData && !simulated && (
           <span className="demo-badge live" title="Real sensor reading from the backend">LIVE</span>
         )}
       </div>

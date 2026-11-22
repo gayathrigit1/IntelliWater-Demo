@@ -5,20 +5,22 @@
 import storageService from './storageService';
 import apiNormalizers from '../utils/apiNormalizers';
 
-const DEFAULT_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000';
+const DEFAULT_BASE_URL =
+  import.meta.env?.VITE_API_BASE_URL || import.meta.env?.VITE_API_URL || 'http://localhost:8000';
 const DEFAULT_TIMEOUT_MS = 5000;
+const OUTLETS = ['main_inlet', 'kitchen', 'bathroom'];
 
+// Routes of the IntelliWater FastAPI backend (app/routers/*.py)
 const ENDPOINTS = {
   health: '/api/health',
-  latestReadings: '/api/readings/latest',
-  hourlyConsumption: '/api/consumption/hourly',
-  dailyConsumption: '/api/consumption/daily',
+  taps: '/api/taps',
+  tap: (tapId) => `/api/taps/${tapId}`,
+  tapTimer: (tapId) => `/api/taps/${tapId}/timer`,
+  latestReading: '/api/readings/latest',
+  hourlyAnalytics: '/api/analytics/hourly',
+  dailyAnalytics: '/api/analytics/daily',
   alerts: '/api/alerts',
-  acknowledgeAlert: (id) => `/api/alerts/${encodeURIComponent(id)}/acknowledge`,
-  timerStart: '/api/timer/start',
-  timerExtend: '/api/timer/extend',
-  timerStop: '/api/timer/stop',
-  settings: '/api/settings'
+  resolveAlert: (alertId) => `/api/alerts/${encodeURIComponent(alertId)}/resolve`
 };
 
 class ApiError extends Error {
@@ -77,53 +79,132 @@ async function checkHealth() {
   }
 }
 
-async function getLatestReadings() {
-  return apiNormalizers.normalizeReadings(await request(ENDPOINTS.latestReadings));
+// Backend identifies taps by numeric id; the frontend uses outlet names (tap_name)
+let tapCache = { baseUrl: null, map: null };
+
+async function getTapMap({ force = false } = {}) {
+  const baseUrl = getBaseUrl();
+  if (!force && tapCache.map && tapCache.baseUrl === baseUrl) return tapCache.map;
+  const map = apiNormalizers.buildTapMap(await request(ENDPOINTS.taps));
+  tapCache = { baseUrl, map };
+  return map;
 }
 
-async function getHourlyConsumption(hours = 24) {
-  return apiNormalizers.normalizeConsumption(
-    await request(ENDPOINTS.hourlyConsumption, { params: { hours } })
-  );
+async function requireTapId(outlet) {
+  let map = await getTapMap();
+  if (!map.byOutlet[outlet]) map = await getTapMap({ force: true });
+  const tapId = map.byOutlet[outlet];
+  if (!tapId) throw new ApiError(`Backend has no tap named '${outlet}'`, 404);
+  return tapId;
 }
 
-async function getDailyConsumption(days = 7) {
-  return apiNormalizers.normalizeConsumption(
-    await request(ENDPOINTS.dailyConsumption, { params: { days } })
+function utcDay(timestamp) {
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+/**
+ * Latest reading per outlet, plus today's litres per tap (from daily analytics)
+ * as the cumulative volume. Outlets without any reading are omitted.
+ */
+async function getLatestReadings(now = Date.now()) {
+  const map = await getTapMap();
+  const outlets = OUTLETS.filter(outlet => map.byOutlet[outlet]);
+  const [daily, ...latest] = await Promise.all([
+    request(ENDPOINTS.dailyAnalytics),
+    ...outlets.map(outlet =>
+      request(ENDPOINTS.latestReading, { params: { tap_id: map.byOutlet[outlet] } }).catch(error => {
+        if (error.status === 404) return null;
+        throw error;
+      })
+    )
+  ]);
+  const todayByTap = apiNormalizers.totalsByTap(daily);
+
+  return latest
+    .map((raw, index) => raw && apiNormalizers.normalizeBackendReading(raw, {
+      outlet: outlets[index],
+      todayLitres: todayByTap[raw.tap_id] ?? null,
+      now
+    }))
+    .filter(Boolean);
+}
+
+/** Hourly litres for the last ~24 h (today and yesterday, UTC days) */
+async function getHourlyConsumption(now = Date.now()) {
+  const map = await getTapMap();
+  const days = [utcDay(now - 24 * 60 * 60 * 1000), utcDay(now)];
+  const responses = await Promise.all(
+    days.map(day => request(ENDPOINTS.hourlyAnalytics, { params: { day } }))
   );
+  const buckets = responses.flatMap(r => r?.buckets || []);
+  return apiNormalizers.consumptionPoints(buckets, map.byOutlet.main_inlet, b => Date.parse(b.hour));
+}
+
+/** Daily litres for the last `days` days (one request per UTC day) */
+async function getDailyConsumption(days = 7, now = Date.now()) {
+  const map = await getTapMap();
+  const dayList = Array.from({ length: days }, (_, i) => utcDay(now - i * 24 * 60 * 60 * 1000));
+  const responses = await Promise.all(
+    dayList.map(day => request(ENDPOINTS.dailyAnalytics, { params: { day } }))
+  );
+  const buckets = responses.flatMap((r, i) => (r?.buckets || []).map(b => ({ ...b, day: dayList[i] })));
+  return apiNormalizers.consumptionPoints(buckets, map.byOutlet.main_inlet, b => Date.parse(`${b.day}T12:00:00Z`));
 }
 
 async function getAlerts(limit = 100) {
-  return apiNormalizers.normalizeAlerts(await request(ENDPOINTS.alerts, { params: { limit } }));
+  const map = await getTapMap();
+  return apiNormalizers.normalizeAlerts(await request(ENDPOINTS.alerts, { params: { limit } }), map.byId);
 }
 
-function acknowledgeAlert(remoteId) {
-  return request(ENDPOINTS.acknowledgeAlert(remoteId), { method: 'POST' });
+async function acknowledgeAlert(remoteId) {
+  try {
+    return await request(ENDPOINTS.resolveAlert(remoteId), { method: 'POST' });
+  } catch (error) {
+    if (error.status === 409) return null; // already resolved
+    throw error;
+  }
 }
 
-function startTimer(outlet, durationMinutes) {
-  return request(ENDPOINTS.timerStart, { method: 'POST', body: { outlet, duration_minutes: durationMinutes } });
-}
+// Backend timer durations are whole minutes; it caps totals at MAX_TIMER_MINUTES (default 10)
+const wholeMinutes = minutes => Math.max(1, Math.round(minutes));
 
-function extendTimer(outlet, additionalMinutes) {
-  return request(ENDPOINTS.timerExtend, { method: 'POST', body: { outlet, additional_minutes: additionalMinutes } });
-}
-
-function stopTimer(outlet) {
-  return request(ENDPOINTS.timerStop, { method: 'POST', body: { outlet } });
-}
-
-function pushSettings(settings) {
-  return request(ENDPOINTS.settings, {
+async function startTimer(outlet, durationMinutes) {
+  const tapId = await requireTapId(outlet);
+  return request(ENDPOINTS.tapTimer(tapId), {
     method: 'POST',
-    body: {
-      thresholds: settings.thresholds,
-      default_timer_minutes: settings.defaultTimerDuration,
-      continuous_flow_limit_minutes: settings.continuousFlowLimitMinutes,
-      wastage_limit_litres: settings.wastageLimitLitres,
-      buzzer_enabled: settings.buzzerEnabled
-    }
+    body: { action: 'start', duration_minutes: wholeMinutes(durationMinutes) }
   });
+}
+
+async function extendTimer(outlet, additionalMinutes) {
+  const tapId = await requireTapId(outlet);
+  return request(ENDPOINTS.tapTimer(tapId), {
+    method: 'POST',
+    body: { action: 'extend', extend_minutes: wholeMinutes(additionalMinutes) }
+  });
+}
+
+async function stopTimer(outlet) {
+  const tapId = await requireTapId(outlet);
+  try {
+    return await request(ENDPOINTS.tapTimer(tapId), { method: 'POST', body: { action: 'stop' } });
+  } catch (error) {
+    if (error.status === 404) return null; // no active timer on the backend
+    throw error;
+  }
+}
+
+/** The backend stores only the per-tap default timer; flow thresholds live in its .env */
+async function pushSettings(settings) {
+  const map = await getTapMap({ force: true });
+  return Promise.all(
+    Object.values(map.byOutlet).map(tapId =>
+      request(ENDPOINTS.tap(tapId), {
+        method: 'PATCH',
+        body: { timer_duration_minutes: wholeMinutes(settings.defaultTimerDuration) }
+      })
+    )
+  );
 }
 
 export default {
@@ -133,6 +214,7 @@ export default {
   getBaseUrl,
   request,
   checkHealth,
+  getTapMap,
   getLatestReadings,
   getHourlyConsumption,
   getDailyConsumption,

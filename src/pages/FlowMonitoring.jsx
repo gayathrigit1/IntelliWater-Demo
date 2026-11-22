@@ -82,6 +82,7 @@ const FlowMonitoring = ({ currentPage = 'flow', onPageChange }) => {
               outlet={selectedOutlet}
               flow={readings[selectedOutlet] ? readings[selectedOutlet].flow : null}
               cumulativeVolume={readings[selectedOutlet] ? readings[selectedOutlet].cumulativeVolume : null}
+              simulated={Boolean(readings[selectedOutlet]?.simulated)}
               classification={classifications[selectedOutlet] || 'NO_FLOW'}
               thresholds={settings.thresholds[selectedOutlet]}
               source={source}
