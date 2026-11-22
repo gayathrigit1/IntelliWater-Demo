@@ -5,13 +5,17 @@ const STORAGE_KEYS = {
   SETTINGS: 'intelliwater_settings',
   ALERTS: 'intelliwater_alerts',
   TIMER_STATE: 'intelliwater_timer_state',
-  DEMO_HISTORY: 'intelliwater_demo_history'
+  DEMO_HISTORY: 'intelliwater_demo_history',
+  CONSUMPTION: 'intelliwater_consumption'
 };
 
 // Default settings
 const DEFAULT_SETTINGS = {
   mode: 'DEMO_MODE',
-  defaultTimerDuration: 5, // minutes
+  defaultTimerDuration: 5, // minutes (5 or 10 recommended)
+  continuousFlowLimitMinutes: 5, // warn when a tap runs continuously this long
+  wastageLimitLitres: 20, // warn when one continuous tap session uses this much water
+  apiBaseUrl: '', // FastAPI backend URL; empty uses VITE_API_BASE_URL or http://localhost:8000
   thresholds: {
     main_inlet: {
       lowFlow: 2.0,
@@ -193,6 +197,50 @@ function clearDemoHistory() {
   }
 }
 
+// Load hourly consumption buckets for a data source ('DEMO_MODE' or 'HARDWARE_MODE')
+function loadConsumption(source) {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.CONSUMPTION);
+    const all = stored ? JSON.parse(stored) : {};
+    return all[source] || {};
+  } catch (error) {
+    console.error('[StorageService] Failed to load consumption:', error);
+    return {};
+  }
+}
+
+// Save hourly consumption buckets for a data source
+function saveConsumption(source, buckets) {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.CONSUMPTION);
+    const all = stored ? JSON.parse(stored) : {};
+    all[source] = buckets;
+    localStorage.setItem(STORAGE_KEYS.CONSUMPTION, JSON.stringify(all));
+    return true;
+  } catch (error) {
+    console.error('[StorageService] Failed to save consumption:', error);
+    return false;
+  }
+}
+
+// Clear consumption history for one source, or all sources
+function clearConsumption(source) {
+  try {
+    if (!source) {
+      localStorage.removeItem(STORAGE_KEYS.CONSUMPTION);
+      return true;
+    }
+    const stored = localStorage.getItem(STORAGE_KEYS.CONSUMPTION);
+    const all = stored ? JSON.parse(stored) : {};
+    delete all[source];
+    localStorage.setItem(STORAGE_KEYS.CONSUMPTION, JSON.stringify(all));
+    return true;
+  } catch (error) {
+    console.error('[StorageService] Failed to clear consumption:', error);
+    return false;
+  }
+}
+
 // Clear all application data
 function clearAllData() {
   try {
@@ -221,6 +269,9 @@ export default {
   saveDemoHistory,
   loadDemoHistory,
   clearDemoHistory,
+  loadConsumption,
+  saveConsumption,
+  clearConsumption,
   clearAllData,
   DEFAULT_SETTINGS
 };

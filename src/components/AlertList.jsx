@@ -10,6 +10,8 @@ const AlertList = ({ alerts, onAcknowledge, onClear }) => {
       case 'discrepancy': return '🔍';
       case 'sensor_error': return '❌';
       case 'connection_loss': return '🔌';
+      case 'continuous_flow': return '⏳';
+      case 'water_wastage': return '🚱';
       default: return '🔔';
     }
   };
@@ -61,7 +63,7 @@ const AlertList = ({ alerts, onAcknowledge, onClear }) => {
             <div className="alert-header">
               <div className="alert-icon">{getAlertIcon(alert.type)}</div>
               <div className="alert-info">
-                <div className="alert-type">{alert.type.replace('_', ' ').toUpperCase()}</div>
+                <div className="alert-type">{String(alert.type).replaceAll('_', ' ').toUpperCase()}</div>
                 <div className="alert-time">{formatTimestamp(alert.timestamp)}</div>
               </div>
               {!alert.acknowledged && (
@@ -86,19 +88,23 @@ const AlertList = ({ alerts, onAcknowledge, onClear }) => {
             {alert.value !== undefined && (
               <div className="alert-details">
                 <span className="detail-label">Value:</span>
-                <span className="detail-value">{alert.value} L/min</span>
+                <span className="detail-value">{alert.value} {alert.unit || 'L/min'}</span>
               </div>
             )}
 
             {alert.threshold !== undefined && (
               <div className="alert-details">
                 <span className="detail-label">Threshold:</span>
-                <span className="detail-value">{alert.threshold} L/min</span>
+                <span className="detail-value">{alert.threshold} {alert.unit || 'L/min'}</span>
               </div>
             )}
 
             {alert.source === 'DEMO_MODE' && (
-              <div className="alert-source-badge">DEMO DATA</div>
+              <div className="alert-source-badge">SIMULATED DATA</div>
+            )}
+
+            {alert.source === 'HARDWARE_MODE' && (
+              <div className="alert-source-badge live">LIVE SENSOR DATA</div>
             )}
           </div>
         ))}

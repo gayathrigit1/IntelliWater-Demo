@@ -5,31 +5,37 @@ import TapTimer from '../components/TapTimer';
 import demoSensorService from '../services/demoSensorService';
 import storageService from '../services/storageService';
 import timerUtils from '../utils/timerUtils';
+import DataSourceBanner from '../components/DataSourceBanner';
+import useMonitoring from '../hooks/useMonitoring';
+import monitoringService from '../services/monitoringService';
+import apiService from '../services/apiService';
 import './TapManagement.css';
 
-const TapManagement = () => {
-  const [currentPage, setCurrentPage] = useState('timer');
-  const [settings, setSettings] = useState(storageService.loadSettings());
+const TapManagement = ({ currentPage = 'timer', onPageChange }) => {
+  const monitoring = useMonitoring();
+  const [settings] = useState(storageService.loadSettings());
   const [selectedOutlet, setSelectedOutlet] = useState('kitchen');
-  const [timer, setTimer] = useState(null);
-  const [flowData, setFlowData] = useState({});
+  const [timer, setTimer] = useState(() => {
+    const savedTimer = storageService.loadTimerState();
+    return savedTimer && !savedTimer.completed ? savedTimer : null;
+  });
   const [testMode, setTestMode] = useState(false);
+  const isHardware = settings.mode === 'HARDWARE_MODE';
+
+  // Forward timer commands to the backend in hardware mode (UI keeps working if it is unreachable)
+  const syncTimer = (action) => {
+    if (isHardware) {
+      action().catch(error => console.warn('[TapManagement] Backend timer sync failed:', error.message));
+    }
+  };
 
   useEffect(() => {
-    // Load saved timer state
-    const savedTimer = storageService.loadTimerState();
-    if (savedTimer && !savedTimer.completed) {
-      setTimer(savedTimer);
-    }
-
-    // Update flow data
     const updateFlow = () => {
-      const readings = demoSensorService.getAllReadings();
+      const latest = monitoringService.getSnapshot().readings;
       const newFlowData = {};
-      readings.forEach(reading => {
+      Object.values(latest).forEach(reading => {
         newFlowData[reading.outlet] = reading.flow;
       });
-      setFlowData(newFlowData);
 
       // Check if timer should be cancelled due to flow stop
       if (timer && !timer.completed && !timer.expired) {
@@ -60,7 +66,7 @@ const TapManagement = () => {
             message: `Timer expired for ${timer.outlet} while water is still flowing`,
             severity: 'warning',
             acknowledged: false,
-            source: 'DEMO_MODE'
+            source: settings.mode
           };
           storageService.saveAlert(alert);
         }
@@ -77,6 +83,7 @@ const TapManagement = () => {
     const newTimer = timerUtils.createTimer(selectedOutlet, durationMinutes);
     setTimer(newTimer);
     storageService.saveTimerState(newTimer);
+    syncTimer(() => apiService.startTimer(selectedOutlet, durationMinutes));
   };
 
   const handlePauseTimer = () => {
@@ -96,6 +103,9 @@ const TapManagement = () => {
   };
 
   const handleStopTimer = () => {
+    if (timer && !timer.completed) {
+      syncTimer(() => apiService.stopTimer(timer.outlet));
+    }
     setTimer(null);
     storageService.clearTimerState();
   };
@@ -105,11 +115,12 @@ const TapManagement = () => {
       const extendedTimer = timerUtils.extendTimer(timer, additionalMinutes);
       setTimer(extendedTimer);
       storageService.saveTimerState(extendedTimer);
+      syncTimer(() => apiService.extendTimer(timer.outlet, additionalMinutes));
     }
   };
 
   const isFlowing = (outlet) => {
-    const flow = flowData[outlet] || 0;
+    const flow = monitoring.readings[outlet]?.flow || 0;
     const threshold = settings.thresholds[outlet]?.flowStop || 0.1;
     return flow > threshold;
   };
@@ -128,14 +139,21 @@ const TapManagement = () => {
 
   return (
     <div className="tap-management-page">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar currentPage={currentPage} onPageChange={onPageChange} />
       <Header 
         pageTitle="Smart Tap Timer" 
-        mode={settings.mode}
-        connectionStatus="DISCONNECTED"
+        mode={monitoring.source}
+        connectionStatus={monitoring.connectionStatus}
       />
       
       <main className="main-content">
+        <DataSourceBanner
+          source={monitoring.source}
+          connectionStatus={monitoring.connectionStatus}
+          error={monitoring.error}
+          lastUpdated={monitoring.lastUpdated}
+          apiBaseUrl={apiService.getBaseUrl()}
+        />
         <div className="tap-management-content">
           <div className="outlet-selection">
             <h2>Select Tap</h2>
@@ -164,11 +182,14 @@ const TapManagement = () => {
               onStop={handleStopTimer}
               onExtend={handleExtendTimer}
               isFlowing={isFlowing(selectedOutlet)}
+              defaultDuration={settings.defaultTimerDuration}
             />
           </div>
 
           <div className="demo-controls">
-            <h3>Demo Controls</h3>
+            {!isHardware && (
+            <>
+            <h3>Demo Controls (simulated data only)</h3>
             <div className="control-group">
               <label>
                 <input
@@ -205,6 +226,9 @@ const TapManagement = () => {
                 </button>
               </div>
             </div>
+
+            </>
+            )}
 
             <div className="info-box">
               <h4>ℹ️ How It Works</h4>

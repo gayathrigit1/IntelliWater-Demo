@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import timerUtils from '../utils/timerUtils';
 import './TapTimer.css';
 
-const TapTimer = ({ timer, onStart, onPause, onResume, onStop, onExtend, isFlowing }) => {
+const TapTimer = ({ timer, onStart, onPause, onResume, onStop, onExtend, isFlowing, defaultDuration = 5 }) => {
   const [remaining, setRemaining] = useState(null);
   const [elapsed, setElapsed] = useState(null);
   const [customDuration, setCustomDuration] = useState('');
@@ -61,25 +61,32 @@ const TapTimer = ({ timer, onStart, onPause, onResume, onStop, onExtend, isFlowi
           <div className="timer-icon">⏱️</div>
           <h3>No Active Timer</h3>
           <p>Start a timer to monitor tap usage</p>
-          
+
+          <div className="timer-quick-start">
+            {[5, 10].map(minutes => (
+              <button
+                key={minutes}
+                className={`timer-quick-btn ${defaultDuration === minutes ? 'default' : ''}`}
+                onClick={() => handleStart(minutes)}
+              >
+                <span className="quick-minutes">{minutes}</span>
+                <span className="quick-label">minute timer{defaultDuration === minutes ? ' (default)' : ''}</span>
+              </button>
+            ))}
+          </div>
+          {![5, 10].includes(defaultDuration) && (
+            <button className="timer-start-btn default-start" onClick={() => handleStart(defaultDuration)}>
+              Start default timer ({timerUtils.formatDuration(defaultDuration)})
+            </button>
+          )}
+          <div className="timer-presets-label">Other durations</div>
+
           <div className="timer-presets">
             <button 
               className="timer-preset-btn"
               onClick={() => handleStart(1)}
             >
               1 min
-            </button>
-            <button 
-              className="timer-preset-btn"
-              onClick={() => handleStart(5)}
-            >
-              5 min
-            </button>
-            <button 
-              className="timer-preset-btn"
-              onClick={() => handleStart(10)}
-            >
-              10 min
             </button>
             <button 
               className="timer-preset-btn"

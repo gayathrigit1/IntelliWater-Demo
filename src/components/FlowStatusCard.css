@@ -99,3 +99,17 @@
     gap: 8px;
   }
 }
+
+.demo-badge.live {
+  background: #28a745;
+  color: white;
+}
+
+.flow-cumulative {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed #e0e0e0;
+}

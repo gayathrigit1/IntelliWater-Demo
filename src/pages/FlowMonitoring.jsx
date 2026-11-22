@@ -3,40 +3,26 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import FlowStatusCard from '../components/FlowStatusCard';
 import FlowChart from '../components/FlowChart';
-import demoSensorService from '../services/demoSensorService';
+import DataSourceBanner from '../components/DataSourceBanner';
+import useMonitoring from '../hooks/useMonitoring';
+import monitoringService from '../services/monitoringService';
+import apiService from '../services/apiService';
 import storageService from '../services/storageService';
-import flowUtils from '../utils/flowUtils';
 import './FlowMonitoring.css';
 
-const FlowMonitoring = () => {
-  const [currentPage, setCurrentPage] = useState('flow');
-  const [settings, setSettings] = useState(storageService.loadSettings());
-  const [flowData, setFlowData] = useState({});
-  const [classifications, setClassifications] = useState({});
+const FlowMonitoring = ({ currentPage = 'flow', onPageChange }) => {
+  const monitoring = useMonitoring();
+  const [settings] = useState(storageService.loadSettings());
   const [flowHistory, setFlowHistory] = useState({ main_inlet: [], kitchen: [], bathroom: [] });
   const [selectedOutlet, setSelectedOutlet] = useState('main_inlet');
+  const { readings, classifications, source } = monitoring;
 
   useEffect(() => {
-    const updateReadings = () => {
-      const readings = demoSensorService.getAllReadings();
-      const newFlowData = {};
-      const newClassifications = {};
-
-      readings.forEach(reading => {
-        newFlowData[reading.outlet] = reading.flow;
-        newClassifications[reading.outlet] = flowUtils.classifyFlow(
-          reading.flow,
-          settings.thresholds[reading.outlet] || settings.thresholds.kitchen
-        );
-      });
-
-      setFlowData(newFlowData);
-      setClassifications(newClassifications);
-
-      // Update flow history for each outlet
+    const interval = setInterval(() => {
+      const latest = monitoringService.getSnapshot().readings;
       setFlowHistory(prev => {
         const updated = { ...prev };
-        readings.forEach(reading => {
+        Object.values(latest).forEach(reading => {
           updated[reading.outlet] = [
             ...(updated[reading.outlet] || []),
             { timestamp: reading.timestamp, value: reading.flow }
@@ -44,13 +30,10 @@ const FlowMonitoring = () => {
         });
         return updated;
       });
-    };
-
-    updateReadings();
-    const interval = setInterval(updateReadings, 1000);
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, [settings]);
+  }, []);
 
   const outletLabels = {
     main_inlet: 'Main Inlet',
@@ -60,14 +43,21 @@ const FlowMonitoring = () => {
 
   return (
     <div className="flow-monitoring-page">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar currentPage={currentPage} onPageChange={onPageChange} />
       <Header 
         pageTitle="Flow Monitoring" 
-        mode={settings.mode}
-        connectionStatus="DISCONNECTED"
+        mode={source}
+        connectionStatus={monitoring.connectionStatus}
       />
       
       <main className="main-content">
+        <DataSourceBanner
+          source={source}
+          connectionStatus={monitoring.connectionStatus}
+          error={monitoring.error}
+          lastUpdated={monitoring.lastUpdated}
+          apiBaseUrl={apiService.getBaseUrl()}
+        />
         <div className="flow-monitoring-content">
           <div className="outlet-selector">
             <h2>Select Outlet</h2>
@@ -90,10 +80,11 @@ const FlowMonitoring = () => {
             
             <FlowStatusCard
               outlet={selectedOutlet}
-              flow={flowData[selectedOutlet] || 0}
+              flow={readings[selectedOutlet] ? readings[selectedOutlet].flow : null}
+              cumulativeVolume={readings[selectedOutlet] ? readings[selectedOutlet].cumulativeVolume : null}
               classification={classifications[selectedOutlet] || 'NO_FLOW'}
               thresholds={settings.thresholds[selectedOutlet]}
-              source="DEMO_MODE"
+              source={source}
             />
 
             <div className="thresholds-info">
@@ -137,24 +128,27 @@ const FlowMonitoring = () => {
             <div className="flow-cards">
               <FlowStatusCard
                 outlet="main_inlet"
-                flow={flowData.main_inlet || 0}
+                flow={readings.main_inlet ? readings.main_inlet.flow : null}
+              cumulativeVolume={readings.main_inlet ? readings.main_inlet.cumulativeVolume : null}
                 classification={classifications.main_inlet || 'NO_FLOW'}
                 thresholds={settings.thresholds.main_inlet}
-                source="DEMO_MODE"
+                source={source}
               />
               <FlowStatusCard
                 outlet="kitchen"
-                flow={flowData.kitchen || 0}
+                flow={readings.kitchen ? readings.kitchen.flow : null}
+              cumulativeVolume={readings.kitchen ? readings.kitchen.cumulativeVolume : null}
                 classification={classifications.kitchen || 'NO_FLOW'}
                 thresholds={settings.thresholds.kitchen}
-                source="DEMO_MODE"
+                source={source}
               />
               <FlowStatusCard
                 outlet="bathroom"
-                flow={flowData.bathroom || 0}
+                flow={readings.bathroom ? readings.bathroom.flow : null}
+              cumulativeVolume={readings.bathroom ? readings.bathroom.cumulativeVolume : null}
                 classification={classifications.bathroom || 'NO_FLOW'}
                 thresholds={settings.thresholds.bathroom}
-                source="DEMO_MODE"
+                source={source}
               />
             </div>
           </div>

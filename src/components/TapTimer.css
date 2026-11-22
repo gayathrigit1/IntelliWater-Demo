@@ -371,3 +371,57 @@
     width: 100%;
   }
 }
+
+.timer-quick-start {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+
+.timer-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  border: 2px solid #1a8fb5;
+  border-radius: 12px;
+  background: white;
+  color: #0d4f6e;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timer-quick-btn:hover {
+  background: #e8f5fa;
+}
+
+.timer-quick-btn.default {
+  background: #0d4f6e;
+  border-color: #0d4f6e;
+  color: white;
+}
+
+.quick-minutes {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.quick-label {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.default-start {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.timer-presets-label {
+  font-size: 12px;
+  color: #6b7c8f;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+}

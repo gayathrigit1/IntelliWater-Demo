@@ -44,8 +44,9 @@ const Header = ({ pageTitle, mode, connectionStatus }) => {
           </div>
           
           <div className={`connection-badge ${connectionStatus.toLowerCase()}`}>
-            {connectionStatus === 'CONNECTED' ? '🔗 Connected' : 
-             connectionStatus === 'CONNECTING' ? '⏳ Connecting...' : 
+            {connectionStatus === 'CONNECTED' ? '🔗 Backend Connected' :
+             connectionStatus === 'CONNECTING' ? '⏳ Connecting...' :
+             connectionStatus === 'SIMULATED' ? '🧪 Simulated Data' :
              '❌ Not Connected'}
           </div>
         </div>

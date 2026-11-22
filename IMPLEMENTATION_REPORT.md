@@ -251,3 +251,43 @@ None - The application builds and runs successfully without errors.
 ## Conclusion
 
 The IntelliWater frontend is a complete, functional prototype ready for ESP32 hardware integration. The architecture is designed to minimize changes when transitioning from demo mode to hardware mode, with clear separation between presentation, data services, and business logic. All requirements from the prompt have been implemented, including the essential smart tap timer with correct extension behavior, configurable thresholds, alert system, and comprehensive documentation.
+
+---
+
+## Update: IoT Monitoring Dashboard & FastAPI Integration
+
+### Data sources
+- **Demo mode** (development only): readings come from `demoSensorService` and are labelled **SIMULATED** on every card, chart, banner and alert.
+- **Hardware mode**: readings come only from the FastAPI backend via `src/services/apiService.js`. If the backend is unreachable, the UI shows "Backend unreachable" and no values — it never falls back to simulated data.
+- Backend URL: Settings → FastAPI Backend URL, or `VITE_API_BASE_URL` (see `.env.example`), default `http://localhost:8000`.
+
+### Expected backend endpoints (`apiService.ENDPOINTS`)
+| Purpose | Method & path |
+|---|---|
+| Health | `GET /api/health` |
+| Latest readings | `GET /api/readings/latest` |
+| Hourly / daily consumption | `GET /api/consumption/hourly`, `GET /api/consumption/daily` |
+| Alerts / acknowledge | `GET /api/alerts`, `POST /api/alerts/{id}/acknowledge` |
+| Timers | `POST /api/timer/start`, `/api/timer/extend`, `/api/timer/stop` |
+| Settings | `POST /api/settings` |
+
+Responses are normalized in `src/utils/apiNormalizers.js` (accepts snake_case aliases such as `flow_rate`, `total_litres`, `tap_id`, `recorded_at`). Adjust `ENDPOINTS` if the backend uses different paths.
+
+### New modules
+- `services/monitoringService.js` + `hooks/useMonitoring.js`: single polling loop shared by all pages; tracks per-tap sessions, cumulative litres, and raises continuous-flow / water-wastage alerts.
+- `utils/consumptionUtils.js`: hourly buckets → hourly (24 h) and daily (7 day) series.
+- `utils/usageUtils.js`: continuous-flow and wastage evaluation.
+- Components: `DataSourceBanner`, `ConsumptionChart`, `TapStatusPanel`, `FlowWarnings`.
+
+### Feature checklist
+- Dashboard KPIs: live flow (L/min), cumulative litres, today's consumption, active warnings.
+- Low / normal / heavy flow classification with legend.
+- Individual tap status table (Kitchen, Bathroom).
+- 5- and 10-minute quick-start timers; default timer configurable in Settings.
+- Continuous-flow (5/10 min, configurable) and water-wastage (litres per run) warnings.
+- Hourly and daily consumption charts.
+- Alert history with status/type/outlet filters, CSV export, backend alerts in hardware mode.
+- Sidebar navigation fixed (page state lifted to `App.jsx`).
+
+### Tests
+`npm test` runs Node's built-in test runner on `tests/` (usage, consumption and API normalizer utilities).
