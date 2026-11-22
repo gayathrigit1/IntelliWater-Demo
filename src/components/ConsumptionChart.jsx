@@ -45,6 +45,11 @@ const ConsumptionChart = ({ data, title, unit = 'L', color = '#1a8fb5', labelEve
       const barWidth = Math.max(2, slot * 0.7);
       ctx.textAlign = 'center';
 
+      // Skip labels so they never overlap on narrow screens
+      const labelWidth = Math.max(...data.map(d => ctx.measureText(d.label).width), 0) + 8;
+      const step = Math.max(labelEvery, Math.ceil(labelWidth / slot));
+      const lastIndex = data.length - 1;
+
       data.forEach((point, index) => {
         const barHeight = (point.value / niceMax) * plotHeight;
         const x = padding.left + slot * index + (slot - barWidth) / 2;
@@ -53,9 +58,13 @@ const ConsumptionChart = ({ data, title, unit = 'L', color = '#1a8fb5', labelEve
         ctx.fillStyle = index === data.length - 1 ? '#0d4f6e' : color;
         ctx.fillRect(x, y, barWidth, barHeight);
 
-        if (index % labelEvery === 0 || index === data.length - 1) {
+        const isLast = index === lastIndex;
+        const fitsBeforeLast = (lastIndex - index) * slot >= labelWidth;
+        if (isLast || (index % step === 0 && fitsBeforeLast)) {
+          const half = ctx.measureText(point.label).width / 2;
+          const labelX = Math.min(Math.max(x + barWidth / 2, half), width - half);
           ctx.fillStyle = '#6b7c8f';
-          ctx.fillText(point.label, x + barWidth / 2, height - padding.bottom + 16);
+          ctx.fillText(point.label, labelX, height - padding.bottom + 16);
         }
       });
     };

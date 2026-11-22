@@ -260,7 +260,9 @@ const Dashboard = ({ currentPage = 'dashboard', onPageChange }) => {
           <div className="alerts-section">
             <h2 className="section-title">Recent Alerts</h2>
             <AlertList
-              alerts={alerts.slice(0, 5)}
+              alerts={alerts
+                .filter(alert => source !== 'HARDWARE_MODE' || alert.source === 'HARDWARE_MODE')
+                .slice(0, 5)}
               onAcknowledge={handleAcknowledgeAlert}
               onClear={handleClearAlerts}
             />
